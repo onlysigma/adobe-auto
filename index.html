@@ -234,20 +234,205 @@
     const title = generateTitle(prompt);
     const tags = generateTags(prompt);
     const category = getCategory(prompt);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart AI Tag Generator</title>
+  <style>
+    body {
+      background: #0d0d0d;
+      color: #eee;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+    }
+    h1 { text-align: center; color: #ffa500; }
+    .drop-zone {
+      border: 2px dashed #555;
+      padding: 40px;
+      text-align: center;
+      margin-bottom: 10px;
+      cursor: pointer;
+      background: #1a1a1a;
+      transition: 0.3s;
+    }
+    .drop-zone.dragover { border-color: #ffa500; background: #222; }
+    textarea {
+      width: 100%; height: 150px; background: #222;
+      color: #fff; border: 1px solid #555; padding: 10px;
+      margin-top: 10px; resize: vertical;
+    }
+    .buttons {
+      display: flex; justify-content: center; gap: 10px; margin: 15px 0;
+    }
+    button {
+      padding: 10px 20px; background: #ffa500; color: #000;
+      font-weight: bold; border: none; cursor: pointer;
+    }
+    button:hover { background: #ff8800; }
+    #output {
+      background: #111; border: 1px solid #444;
+      padding: 15px; white-space: pre-wrap; margin-top: 10px;
+    }
+    #preview { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+    #preview img {
+      height: 100px; border: 1px solid #555; border-radius: 5px;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
 
-    csv += `"${file.name}","${title}","${tags}","${category}",""\n`;
+<h1>🍽️ AI Metadata Tool with Smart Tags</h1>
+
+<div class="drop-zone" id="dropZone">
+  📁 Drag & drop images here or click to browse
+  <input type="file" id="images" multiple accept="image/*" style="display: none;" />
+</div>
+
+<div id="preview"></div>
+<textarea id="prompts" placeholder="Enter one prompt per line (in order)..."></textarea>
+
+<div class="buttons">
+  <button onclick="previewData()">🔍 Preview</button>
+  <button onclick="generateCSV()">📅 Generate CSV</button>
+</div>
+
+<div id="output"></div>
+
+<script>
+  const STOPWORDS = new Set(["with","and","a","an","the","in","on","of","to","for","at","by","from"]);
+  const dropZone = document.getElementById("dropZone");
+  const fileInput = document.getElementById("images");
+  let droppedFiles = [];
+
+  dropZone.addEventListener("click", () => fileInput.click());
+
+  dropZone.addEventListener("dragover", e => {
+    e.preventDefault();
+    dropZone.classList.add("dragover");
+  });
+
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    droppedFiles = Array.from(e.dataTransfer.files).sort(compareFiles);
+    showPreviews();
+  });
+
+  fileInput.addEventListener("change", () => {
+    droppedFiles = Array.from(fileInput.files).sort(compareFiles);
+    showPreviews();
+  });
+
+  function compareFiles(a, b) {
+    const an = a.name.match(/\d+/);
+    const bn = b.name.match(/\d+/);
+    if (an && bn) {
+      return parseInt(an[0]) - parseInt(bn[0]);
+    } else {
+      return a.name.localeCompare(b.name);
+    }
   }
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
+  function showPreviews() {
+    const preview = document.getElementById("preview");
+    preview.innerHTML = "";
+    droppedFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.createElement("img");
+        img.src = e.target.result;
+        preview.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
 
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  a.download = `metadata_${timestamp}.csv`;
+  function getPrompt(i, file, prompts) {
+    let prompt = prompts[i]?.trim();
+    if (!prompt) {
+      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+      prompt = nameWithoutExt.replace(/[_-]+/g, " ");
+    }
+    return prompt;
+  }
 
-  a.click();
-}
-  </script>
+  function generateTitle(prompt) {
+    return prompt.split(" ")
+      .filter(word => !STOPWORDS.has(word.toLowerCase()))
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .slice(0, 7).join(" ");
+  }
 
+  function generateSmartTags(prompt) {
+    const words = (prompt.toLowerCase().match(/\b[a-z]{3,}\b/g) || [])
+      .filter(w => !STOPWORDS.has(w));
+    const uniqueWords = [...new Set(words)];
+    const selected = [];
+
+    // Shuffle
+    for (let i = uniqueWords.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [uniqueWords[i], uniqueWords[j]] = [uniqueWords[j], uniqueWords[i]];
+    }
+
+    // Choose 15 to 30 tags
+    const count = Math.min(30, Math.max(15, uniqueWords.length));
+    for (let i = 0; i < count; i++) {
+      if (uniqueWords[i]) selected.push(uniqueWords[i]);
+    }
+
+    return selected.join(", ");
+  }
+
+  function getCategory(prompt) {
+    const lower = prompt.toLowerCase();
+    if (lower.includes("coffee") || lower.includes("tea") || lower.includes("drink")) return "Drinks";
+    return "Food";
+  }
+
+  function previewData() {
+    const prompts = document.getElementById("prompts").value.trim().split("\n");
+    let out = "";
+
+    for (let i = 0; i < droppedFiles.length; i++) {
+      const file = droppedFiles[i];
+      const prompt = getPrompt(i, file, prompts);
+      const title = generateTitle(prompt);
+      const tags = generateSmartTags(prompt);
+      const category = getCategory(prompt);
+
+      out += `📷 ${file.name}\n🎤 Title: ${title}\n🏷️ Tags: ${tags}\n📂 Category: ${category}\n---\n`;
+    }
+
+    document.getElementById("output").textContent = out;
+  }
+
+  function generateCSV() {
+    const prompts = document.getElementById("prompts").value.trim().split("\n");
+    let timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    let csv = "Filename,Title,Keywords,Category,Releases\n";
+
+    for (let i = 0; i < droppedFiles.length; i++) {
+      const file = droppedFiles[i];
+      const prompt = getPrompt(i, file, prompts);
+      const title = generateTitle(prompt);
+      const tags = generateSmartTags(prompt);
+      const category = getCategory(prompt);
+
+      csv += `"${file.name}","${title}","${tags}","${category}",""\n`;
+    }
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `metadata-${timestamp}.csv`;
+    a.click();
+  }
+</script>
 </body>
 </html>
