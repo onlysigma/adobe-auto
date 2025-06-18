@@ -112,11 +112,11 @@
     dropZone.addEventListener("drop", e => {
       e.preventDefault();
       dropZone.classList.remove("dragover");
-      droppedFiles = Array.from(e.dataTransfer.files);
+      droppedFiles = Array.from(e.dataTransfer.files).sort((a, b) => a.name.localeCompare(b.name));
       showPreviews();
     });
     fileInput.addEventListener("change", () => {
-      droppedFiles = Array.from(fileInput.files);
+      droppedFiles = Array.from(fileInput.files).sort((a, b) => a.name.localeCompare(b.name));
       showPreviews();
     });
 
@@ -193,10 +193,10 @@
     }
 
     function previewData() {
-  const prompts = document.getElementById("prompts").value
-  .split("\n")
-  .map(line => line.trim())
-  .filter(line => line.length > 0);
+      const prompts = document.getElementById("prompts").value
+        .split("\n")
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
 
       let out = "";
 
