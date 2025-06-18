@@ -112,11 +112,19 @@
     dropZone.addEventListener("drop", e => {
       e.preventDefault();
       dropZone.classList.remove("dragover");
-      droppedFiles = Array.from(e.dataTransfer.files).sort((a, b) => a.name.localeCompare(b.name));
+      droppedFiles = Array.from(e.dataTransfer.files).sort((a, b) => {
+        const an = parseInt(a.name.match(/\d+/));
+        const bn = parseInt(b.name.match(/\d+/));
+        return an - bn;
+      });
       showPreviews();
     });
     fileInput.addEventListener("change", () => {
-      droppedFiles = Array.from(fileInput.files).sort((a, b) => a.name.localeCompare(b.name));
+      droppedFiles = Array.from(fileInput.files).sort((a, b) => {
+        const an = parseInt(a.name.match(/\d+/));
+        const bn = parseInt(b.name.match(/\d+/));
+        return an - bn;
+      });
       showPreviews();
     });
 
