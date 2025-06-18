@@ -112,21 +112,24 @@
     dropZone.addEventListener("drop", e => {
       e.preventDefault();
       dropZone.classList.remove("dragover");
-      droppedFiles = Array.from(e.dataTransfer.files).sort((a, b) => {
-        const an = parseInt(a.name.match(/\d+/));
-        const bn = parseInt(b.name.match(/\d+/));
-        return an - bn;
-      });
+      droppedFiles = sortFiles(Array.from(e.dataTransfer.files));
       showPreviews();
     });
     fileInput.addEventListener("change", () => {
-      droppedFiles = Array.from(fileInput.files).sort((a, b) => {
-        const an = parseInt(a.name.match(/\d+/));
-        const bn = parseInt(b.name.match(/\d+/));
-        return an - bn;
-      });
+      droppedFiles = sortFiles(Array.from(fileInput.files));
       showPreviews();
     });
+
+    function sortFiles(files) {
+      return files.sort((a, b) => {
+        const aMatch = a.name.match(/\d+/);
+        const bMatch = b.name.match(/\d+/);
+        const an = aMatch ? parseInt(aMatch[0]) : 0;
+        const bn = bMatch ? parseInt(bMatch[0]) : 0;
+        if (an === bn) return a.name.localeCompare(b.name);
+        return an - bn;
+      });
+    }
 
     function showPreviews() {
       const preview = document.getElementById("preview");
