@@ -64,25 +64,17 @@
 </div>
 
 <div id="output"></div>
-
 <script>
-  const STOPWORDS = new Set(["with","and","a","an","the","in","on","of","to","for","at","by","from"]);
+  const STOPWORDS = new Set(["with", "and", "a", "an", "the", "in", "on", "of", "to", "for", "at", "by", "from"]);
   const dropZone = document.getElementById("dropZone");
   const fileInput = document.getElementById("images");
   let droppedFiles = [];
 
   dropZone.addEventListener("click", () => fileInput.click());
-
-  dropZone.addEventListener("dragover", e => {
-    e.preventDefault();
-    dropZone.classList.add("dragover");
-  });
-
+  dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
   dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
-
   dropZone.addEventListener("drop", e => {
-    e.preventDefault();
-    dropZone.classList.remove("dragover");
+    e.preventDefault(); dropZone.classList.remove("dragover");
     droppedFiles = Array.from(e.dataTransfer.files).sort(compareFiles);
     showPreviews();
   });
@@ -93,13 +85,9 @@
   });
 
   function compareFiles(a, b) {
-    const an = a.name.match(/\d+/);
-    const bn = b.name.match(/\d+/);
-    if (an && bn) {
-      return parseInt(an[0]) - parseInt(bn[0]);
-    } else {
-      return a.name.localeCompare(b.name);
-    }
+    const an = a.name.match(/\d+/); const bn = b.name.match(/\d+/);
+    if (an && bn) return parseInt(an[0]) - parseInt(bn[0]);
+    return a.name.localeCompare(b.name);
   }
 
   function showPreviews() {
@@ -126,36 +114,39 @@
   }
 
   function generateTitle(prompt) {
-    return prompt.split(" ")
+    return prompt
+      .replace(/[,\.]/g, "")
+      .split(" ")
       .filter(word => !STOPWORDS.has(word.toLowerCase()))
       .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-      .slice(0, 7).join(" ");
+      .slice(0, 10)
+      .join(" ");
   }
 
   function generateSmartTags(prompt) {
-    const words = (prompt.toLowerCase().match(/\b[a-z]{3,}\b/g) || [])
-      .filter(w => !STOPWORDS.has(w));
-    const uniqueWords = [...new Set(words)];
-    const selected = [];
+    const baseWords = (prompt.toLowerCase().match(/\b[a-z]{3,}\b/g) || []).filter(w => !STOPWORDS.has(w));
+    const bigrams = [];
 
-    // Shuffle
-    for (let i = uniqueWords.length - 1; i > 0; i--) {
+    for (let i = 0; i < baseWords.length - 1; i++) {
+      const first = baseWords[i], second = baseWords[i + 1];
+      if (!STOPWORDS.has(first) && !STOPWORDS.has(second)) {
+        bigrams.push(`${first} ${second}`);
+      }
+    }
+
+    const combined = [...new Set([...baseWords, ...bigrams])];
+    for (let i = combined.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [uniqueWords[i], uniqueWords[j]] = [uniqueWords[j], uniqueWords[i]];
+      [combined[i], combined[j]] = [combined[j], combined[i]];
     }
 
-    // Choose 15 to 30 tags
-    const count = Math.min(30, Math.max(15, uniqueWords.length));
-    for (let i = 0; i < count; i++) {
-      if (uniqueWords[i]) selected.push(uniqueWords[i]);
-    }
-
-    return selected.join(", ");
+    const count = Math.min(30, Math.max(15, combined.length));
+    return combined.slice(0, count).join(", ");
   }
 
   function getCategory(prompt) {
     const lower = prompt.toLowerCase();
-    if (lower.includes("coffee") || lower.includes("tea") || lower.includes("drink")) return "Drinks";
+    if (lower.includes("coffee") || lower.includes("tea") || lower.includes("drink") || lower.includes("juice")) return "Drinks";
     return "Food";
   }
 
